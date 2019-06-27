@@ -13,6 +13,11 @@
 #include <QDir>
 #include <QTextCodec>
 #include <QSysInfo>
+#include <QReadWriteLock>
+#include <QReadLocker>
+#include <QWriteLocker>
+#include <QQueue>
+
 class LEAFLOGGERSHARED_EXPORT LeafLogger
 {
 public:
@@ -34,6 +39,8 @@ private:
     static QFile file;
     static bool isFileSetPath;
     static QMutex mutex;
+    static QQueue<QString> logBuffer;
+    static QReadWriteLock logBufferLock;
 };
 
 

@@ -102,8 +102,11 @@ LeafLogger &LeafLogger::operator<<(const QString log)
     return *this;
 }
 
+//Initialize the global variables
 QFile LeafLogger::file;
 bool LeafLogger::isFileSetPath = false;
 QMutex LeafLogger::mutex;
+QQueue<QString> LeafLogger::logBuffer;
+QReadWriteLock LeafLogger::logBufferLock;
 
 
