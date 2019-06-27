@@ -1,15 +1,17 @@
 ﻿#include "../include/leaflogger.h"
+#include<stdio.h>
+
 void LeafLogger::LogMessage(const QString log)
 {
     QMutexLocker locker(&mutex);
     QDateTime current_date_time =QDateTime::currentDateTime();
     if (!isFileSetPath) {
-        QString log_text = QString(u8"[%1] %2\n").arg(current_date_time.toString("yyyy.MM.dd hh:mm:ss.zzz")).arg(QStringLiteral("警告：日志文件IO设备没有被指定路径，日志将不会被记录到文件中。"));
-        qDebug() << log_text;
+        QString log_text = QString(u8"[%1] %2\n").arg(current_date_time.toString("yyyy.MM.dd hh:mm:ss.zzz")).arg("Warning: the path of file for log is not specificed, the log will not be saved to any file.");
+        fprintf(stderr,log_text.toUtf8().data());
     }
 
     QString log_text = QString(u8"[%1] %2\n").arg(current_date_time.toString("yyyy.MM.dd hh:mm:ss.zzz")).arg(log);
-    qDebug() << log_text;
+        fprintf(stderr,log_text.toUtf8().data());
     if (isFileSetPath){
         QTextStream writer(&file);
         writer.setCodec(QTextCodec::codecForName("Utf8"));
@@ -17,21 +19,21 @@ void LeafLogger::LogMessage(const QString log)
     }
 }
 
-void LeafLogger::LogMessage(const wchar_t *log)
+void LeafLogger::LogMessage(QMetaObject *metaObject, const QString log)
 {
-    LogMessage(QString::fromWCharArray(log));
+   LogMessage(QString("[Log from %1] %2").arg(metaObject->className()).arg(log));
 }
+
 void LeafLogger::setFilePath(QString Path)
 {
     if (file.isOpen())
         file.close();
     file.setFileName(Path);
     file.open(QIODevice::ReadWrite);
-    //writer.setDevice(file);
     isFileSetPath = true;
 }
 
-void LeafLogger::setFilePathWithTime()
+QString LeafLogger::setFilePathWithTime(const QString timeFormat)
 {
     QDateTime current_date_time =QDateTime::currentDateTime();
     QDir* dir = new QDir;
@@ -39,7 +41,9 @@ void LeafLogger::setFilePathWithTime()
         dir->mkdir("log");
     }
     delete dir;
-    setFilePath(QString("./log/log%1.txt").arg(current_date_time.toString("yyyyMMddhhmmsszzz")));
+    auto fileName=QString("./log/log%1.txt").arg(current_date_time.toString(timeFormat));
+    setFilePath(fileName);
+    return fileName;
 }
 LeafLogger LeafLogger::getLogger()
 {
@@ -48,12 +52,14 @@ LeafLogger LeafLogger::getLogger()
 
 void LeafLogger::LogSysInfo()
 {
-    LeafLogger::LogMessage(QString(u8"启动唯一标识符（仅Linux与Apple）：%1").arg(QString(QSysInfo::bootUniqueId())));
-    LeafLogger::LogMessage(QString(u8"当前程序ABI：%1").arg(QSysInfo::buildAbi()));
-    LeafLogger::LogMessage(QString(u8"当前系统架构：%1").arg(QSysInfo::currentCpuArchitecture()));
-    LeafLogger::LogMessage(QString(u8"机器唯一标识符：%1").arg(QString(QSysInfo::machineUniqueId())));
-    LeafLogger::LogMessage(QString(u8"机器主机名：%1").arg(QSysInfo::machineHostName()));
-    LeafLogger::LogMessage(QString(u8"操作系统：%1").arg(QSysInfo::prettyProductName()));
+    LeafLogger::LogMessage("======  System Info  ======");
+    LeafLogger::LogMessage(QString(u8"bootUniqueId: %1").arg(QString(QSysInfo::bootUniqueId())));
+    LeafLogger::LogMessage(QString(u8"buildAbi: %1").arg(QSysInfo::buildAbi()));
+    LeafLogger::LogMessage(QString(u8"currentCpuArchitecture: %1").arg(QSysInfo::currentCpuArchitecture()));
+    LeafLogger::LogMessage(QString(u8"machineUniqueId: %1").arg(QString(QSysInfo::machineUniqueId())));
+    LeafLogger::LogMessage(QString(u8"machineHostName: %1").arg(QSysInfo::machineHostName()));
+    LeafLogger::LogMessage(QString(u8"prettyProductName: %1").arg(QSysInfo::prettyProductName()));
+    LeafLogger::LogMessage("======  System Info End  ======");
 }
 
 void LeafLogger::LogInit()
@@ -62,32 +68,42 @@ void LeafLogger::LogInit()
     LogSysInfo();
 }
 
+void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& messageLogContext, const QString& message)
+{
+    QString msgTypeString;
+    switch (msgType) {
+    case QtDebugMsg :
+        msgTypeString = "[Debug]";
+        break;
+    case QtInfoMsg :
+        msgTypeString = "[Info]";
+        break;
+    case QtWarningMsg :
+        msgTypeString = "[Warning]";
+        break;
+    case QtCriticalMsg :
+        msgTypeString = "[Critical]";
+        break;
+    case QtFatalMsg :
+        msgTypeString = "[Fatal]";
+    }
+    QString logContextString = QString("\n++++ category: %1 | file: %2 line: %3\n++++ function : %4 | version : %5").arg(messageLogContext.category).arg(messageLogContext.file).arg(messageLogContext.line).arg(messageLogContext.function).arg(messageLogContext.version);
+    LogMessage(msgTypeString + message + logContextString);
+}
+
+QString LeafLogger::getFileName()
+{
+    return file.fileName();
+}
+
 LeafLogger &LeafLogger::operator<<(const QString log)
 {
     LogMessage(log);
     return *this;
 }
 
-LeafLogger &LeafLogger::operator<<(const wchar_t *log)
-{
-    LogMessage(QString::fromWCharArray(log));
-    return *this;
-}
-
-void LeafLogger::LogMessage(const QString log, const char* func)
-{
-    QString log_with_func = QString(u8"函数：%1：%2").arg(func).arg(log);
-    LogMessage(log_with_func);
-}
-
-void LeafLogger::LogMessage(const QString log, const char* func, const char* file, int line)
-{
-    QString log_with_func_line = QString("（%4:%2）函数：%1：%3").arg(func).arg(line).arg(log).arg(file);
-    LogMessage(log_with_func_line);
-}
 QFile LeafLogger::file;
 bool LeafLogger::isFileSetPath = false;
-//QTextStream LeafLogger::writer = QTextStream(file);
 QMutex LeafLogger::mutex;
 
 
