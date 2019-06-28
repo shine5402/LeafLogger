@@ -10,7 +10,6 @@ QString LeafLogger::getLogWithTime(const QString& log)
 void LeafLogger::commitLog(const QString& log)
 {
     printToConsole(log);
-    writeToFile(log);
     addToBuffer(log);
 }
 
@@ -24,16 +23,7 @@ void LeafLogger::addToBuffer(const QString& log)
 {
     QMutexLocker locker(&logBufferMutex);
     logBuffer.enqueue(log);
-}
-
-void LeafLogger::writeToFile(QString log)
-{
-    if (!isFileSetPath) {
-        printToConsole(getLogWithTime("Warning: the path of file for log is not specificed, the log will not be saved to any file."));
-        return;
-    }
-    auto controller = new LogFileWriterController;
-    controller->operate(log);
+    emit logFileWriterController->bufferReady();
 }
 
 void LeafLogger::LogMessagePrivate(const QString log)
@@ -87,14 +77,11 @@ void LeafLogger::LogSysInfo()
     LeafLogger::LogMessagePrivate("======  System Info End  ======");
 }
 
-void LeafLogger::LogInit(QCoreApplication* coreApplication)
+void LeafLogger::LogInit()
 {
     setFilePathWithTime();
     LogSysInfo();
     qInstallMessageHandler(messageHandler);
-    aboutToQuitHelper = new LeafLoggerAboutToQuitHelper(coreApplication);
-    if (coreApplication)
-        QObject::connect(coreApplication,&QCoreApplication::aboutToQuit,aboutToQuitHelper,&LeafLoggerAboutToQuitHelper::handleAboutToQuit);
 }
 
 void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& messageLogContext, const QString& message)
@@ -128,14 +115,11 @@ QString LeafLogger::getFileName()
 LeafLogger::Garbo::Garbo()
 {
     LogFileWriter::setFileDevice(&LeafLogger::file);
-
+    LogFileWriter::setBuffer(&logBuffer,&logBufferMutex);
 }
 
 LeafLogger::Garbo::~Garbo(){
-    qApp->processEvents();
-    for (auto controller : LeafLogger::controllerList)
-        if (controller)
-            delete controller;
+    logFileWriterController->deleteLater();
 }
 
 LeafLogger &LeafLogger::operator<<(const QString log)
@@ -144,30 +128,13 @@ LeafLogger &LeafLogger::operator<<(const QString log)
     return *this;
 }
 
-LeafLoggerAboutToQuitHelper::LeafLoggerAboutToQuitHelper(QObject* parent) : QObject (parent)
-{
-
-}
-
-LeafLoggerAboutToQuitHelper::~LeafLoggerAboutToQuitHelper()
-{
-
-}
-
-void LeafLoggerAboutToQuitHelper::handleAboutToQuit()
-{
-    for (auto controller : LeafLogger::controllerList)
-        if (controller)
-            delete controller;
-}
-
 
 //Initialize the global variables
 QFile LeafLogger::file;
 bool LeafLogger::isFileSetPath = false;
 QMutex LeafLogger::consoleMutex;
 LeafLogger::Garbo LeafLogger::garbo;
-QList<LogFileWriterController *> LeafLogger::controllerList{};
-LeafLoggerAboutToQuitHelper* LeafLogger::aboutToQuitHelper = nullptr;
 QQueue<QString> LeafLogger::logBuffer{};
+QMutex LeafLogger::logBufferMutex;
+LogFileWriterController* LeafLogger::logFileWriterController = new LogFileWriterController;
 

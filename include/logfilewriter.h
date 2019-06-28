@@ -7,6 +7,7 @@
 #include <QTextCodec>
 #include <QMutex>
 #include <QThread>
+#include <QQueue>
 
 class LogFileWriter : public QObject
 {
@@ -14,14 +15,17 @@ class LogFileWriter : public QObject
 public:
     explicit LogFileWriter(QObject *parent = nullptr);
     static void setFileDevice(QFile* file);
+    static void setBuffer(QQueue<QString>* buffer,QMutex* bufferMutex);
 
 signals:
     void finished();
 public slots:
-    void doWork(const QString& log);
+    void doWork();
 private:
     static QFile* file;
     static QMutex fileMutex;
+    static QQueue<QString>* buffer;
+    static QMutex* bufferMutex;
 };
 class LogFileWriterController : public QObject
 {
@@ -32,8 +36,7 @@ public:
     LogFileWriterController(QObject* parent = nullptr) : QObject (parent) {
         LogFileWriter *worker = new LogFileWriter;
         worker->moveToThread(&workerThread);
-        connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
-        connect(this, &LogFileWriterController::operate, worker, &LogFileWriter::doWork);
+        connect(this, &LogFileWriterController::bufferReady, worker, &LogFileWriter::doWork);
         connect(worker,&LogFileWriter::finished,this,&LogFileWriterController::handleFinished);
         workerThread.start();
     }
@@ -44,7 +47,7 @@ public:
 public slots:
     void handleFinished();
 signals:
-    void operate(const QString &);
+    void bufferReady();
 };
 
 #endif // LOGFILEWRITER_H

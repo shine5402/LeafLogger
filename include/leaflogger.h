@@ -20,16 +20,6 @@
 #include "logfilewriter.h"
 #include <QCoreApplication>
 
-class LeafLoggerAboutToQuitHelper : public QObject{
-    Q_OBJECT
-public:
-    LeafLoggerAboutToQuitHelper(QObject* parent = nullptr);
-    ~LeafLoggerAboutToQuitHelper();
-
-public slots:
-    void handleAboutToQuit();
-};
-
 class LEAFLOGGERSHARED_EXPORT LeafLogger
 {
 public:
@@ -39,7 +29,7 @@ public:
     static QString setFilePathWithTime(const QString timeFormat = "yyyyMMddhhmmsszzz");
     LeafLogger& operator<<(const QString log);
     static void LogSysInfo();
-    static void LogInit(QCoreApplication* coreApplication = nullptr);
+    static void LogInit();
     static void messageHandler(QtMsgType msgType, const QMessageLogContext& messageLogContext, const QString& message);
     static QString getFileName();
 
@@ -54,8 +44,7 @@ private:
     static QQueue<QString> logBuffer;
     static QMutex logBufferMutex;
     static void addToBuffer(const QString& log);
-    static void writeToFile(QString log);
-    static QList<LogFileWriterController *> controllerList;
+    static LogFileWriterController* logFileWriterController;
     class Garbo{
     public:
         Garbo();
@@ -64,8 +53,7 @@ private:
     };
     static Garbo garbo;
     friend Garbo;
-    friend LeafLoggerAboutToQuitHelper;
-    static LeafLoggerAboutToQuitHelper* aboutToQuitHelper;
+
 };
 
 

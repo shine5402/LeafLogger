@@ -10,21 +10,32 @@ void LogFileWriter::setFileDevice(QFile* file)
     LogFileWriter::file = file;
 }
 
-void LogFileWriter::doWork(const QString& log)
+void LogFileWriter::setBuffer(QQueue<QString>* buffer, QMutex* bufferMutex)
 {
-    QMutexLocker locker(&fileMutex);
+    LogFileWriter::buffer = buffer;
+    LogFileWriter::bufferMutex = bufferMutex;
+}
+
+void LogFileWriter::doWork()
+{
+    QMutexLocker fileLocker(&fileMutex);
     if (!file)
         return;
     QTextStream writer(file);
     writer.setCodec(QTextCodec::codecForName("Utf8"));
-    writer << log;
+    QMutexLocker bufferLocker(bufferMutex);
+    for (int i = 0;i < buffer->count();i++) {
+        writer << buffer->dequeue();
+    };
 }
 
 QFile* LogFileWriter::file = nullptr;
 QMutex LogFileWriter::fileMutex;
+QQueue<QString>* LogFileWriter::buffer;
+QMutex* LogFileWriter::bufferMutex;
 
 void LogFileWriterController::handleFinished()
 {
-    workerThread.quit();
+
 }
 
