@@ -17,6 +17,18 @@
 #include <QReadLocker>
 #include <QWriteLocker>
 #include <QQueue>
+#include "logfilewriter.h"
+#include <QCoreApplication>
+
+class LeafLoggerAboutToQuitHelper : public QObject{
+    Q_OBJECT
+public:
+    LeafLoggerAboutToQuitHelper(QObject* parent = nullptr);
+    ~LeafLoggerAboutToQuitHelper();
+
+public slots:
+    void handleAboutToQuit();
+};
 
 class LEAFLOGGERSHARED_EXPORT LeafLogger
 {
@@ -26,21 +38,34 @@ public:
     static void setFilePath(QString Path);
     static QString setFilePathWithTime(const QString timeFormat = "yyyyMMddhhmmsszzz");
     LeafLogger& operator<<(const QString log);
-    static LeafLogger getLogger();
     static void LogSysInfo();
-    static void LogInit();
+    static void LogInit(QCoreApplication* coreApplication = nullptr);
     static void messageHandler(QtMsgType msgType, const QMessageLogContext& messageLogContext, const QString& message);
     static QString getFileName();
-signals:
-
-public slots:
 
 private:
     static QFile file;
     static bool isFileSetPath;
-    static QMutex mutex;
+    static QMutex consoleMutex;
+    static void LogMessagePrivate(const QString log);
+    static QString getLogWithTime(const QString& log);
+    static void commitLog(const QString& log);
+    static int printToConsole(const QString& log);
     static QQueue<QString> logBuffer;
-    static QReadWriteLock logBufferLock;
+    static QMutex logBufferMutex;
+    static void addToBuffer(const QString& log);
+    static void writeToFile(QString log);
+    static QList<LogFileWriterController *> controllerList;
+    class Garbo{
+    public:
+        Garbo();
+        ~Garbo();
+
+    };
+    static Garbo garbo;
+    friend Garbo;
+    friend LeafLoggerAboutToQuitHelper;
+    static LeafLoggerAboutToQuitHelper* aboutToQuitHelper;
 };
 
 

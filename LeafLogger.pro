@@ -23,11 +23,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        ./src/leaflogger.cpp
+        ./src/leaflogger.cpp \
+        ./src/logfilewriter.cpp
 
 HEADERS += \
         ./include/leaflogger.h \
-        ./include/leaflogger_global.h
+        ./include/leaflogger_global.h \
+        ./include/logfilewriter.h
 CONFIG(debug, debug|release) {
      mac: TARGET = $$join(TARGET,,,_debug)
      win32: TARGET = $$join(TARGET,,,d)
