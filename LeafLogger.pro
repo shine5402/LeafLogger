@@ -24,12 +24,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         ./src/leaflogger.cpp \
-        ./src/logfilewriter.cpp
+        ./src/asyncfilewriter.cpp
 
 HEADERS += \
         ./include/leaflogger.h \
         ./include/leaflogger_global.h \
-        ./include/logfilewriter.h
+        ./include/asyncfilewriter.h
 CONFIG(debug, debug|release) {
      mac: TARGET = $$join(TARGET,,,_debug)
      win32: TARGET = $$join(TARGET,,,d)

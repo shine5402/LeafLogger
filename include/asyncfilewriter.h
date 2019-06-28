@@ -8,39 +8,39 @@
 #include <QMutex>
 #include <QThread>
 #include <QQueue>
-
-class LogFileWriter : public QObject
+class AsyncFileWriter;
+class AsyncFileWriterWorker : public QObject
 {
+    friend AsyncFileWriter;
     Q_OBJECT
-public:
-    explicit LogFileWriter(QObject *parent = nullptr);
-    static void setFileDevice(QFile* file);
-    static void setBuffer(QQueue<QString>* buffer,QMutex* bufferMutex);
-
 signals:
     void finished();
-public slots:
+private slots:
     void doWork();
 private:
+    explicit AsyncFileWriterWorker(QObject *parent = nullptr);
     static QFile* file;
     static QMutex fileMutex;
     static QQueue<QString>* buffer;
     static QMutex* bufferMutex;
+
 };
-class LogFileWriterController : public QObject
+class AsyncFileWriter : public QObject
 {
     Q_OBJECT
     QThread workerThread;
 
 public:
-    LogFileWriterController(QObject* parent = nullptr) : QObject (parent) {
-        LogFileWriter *worker = new LogFileWriter;
+    AsyncFileWriter(QObject* parent = nullptr) : QObject (parent) {
+        AsyncFileWriterWorker *worker = new AsyncFileWriterWorker;
         worker->moveToThread(&workerThread);
-        connect(this, &LogFileWriterController::bufferReady, worker, &LogFileWriter::doWork);
-        connect(worker,&LogFileWriter::finished,this,&LogFileWriterController::handleFinished);
+        connect(this, &AsyncFileWriter::bufferReady, worker, &AsyncFileWriterWorker::doWork);
+        connect(worker,&AsyncFileWriterWorker::finished,this,&AsyncFileWriter::handleFinished);
         workerThread.start();
     }
-    ~LogFileWriterController() {
+    static void setBuffer(QQueue<QString>* buffer,QMutex* bufferMutex);
+    static void setFileDevice(QFile* file);
+    ~AsyncFileWriter() {
         workerThread.quit();
         workerThread.wait();
     }

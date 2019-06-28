@@ -17,7 +17,7 @@
 #include <QReadLocker>
 #include <QWriteLocker>
 #include <QQueue>
-#include "logfilewriter.h"
+#include "asyncfilewriter.h"
 #include <QCoreApplication>
 
 class LEAFLOGGERSHARED_EXPORT LeafLogger
@@ -44,7 +44,7 @@ private:
     static QQueue<QString> logBuffer;
     static QMutex logBufferMutex;
     static void addToBuffer(const QString& log);
-    static LogFileWriterController* logFileWriterController;
+    static AsyncFileWriter* logFileWriterController;
     class Garbo{
     public:
         Garbo();

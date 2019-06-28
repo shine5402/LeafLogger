@@ -114,8 +114,8 @@ QString LeafLogger::getFileName()
 
 LeafLogger::Garbo::Garbo()
 {
-    LogFileWriter::setFileDevice(&LeafLogger::file);
-    LogFileWriter::setBuffer(&logBuffer,&logBufferMutex);
+    AsyncFileWriter::setFileDevice(&LeafLogger::file);
+    AsyncFileWriter::setBuffer(&logBuffer,&logBufferMutex);
 }
 
 LeafLogger::Garbo::~Garbo(){
@@ -136,5 +136,5 @@ QMutex LeafLogger::consoleMutex;
 LeafLogger::Garbo LeafLogger::garbo;
 QQueue<QString> LeafLogger::logBuffer{};
 QMutex LeafLogger::logBufferMutex;
-LogFileWriterController* LeafLogger::logFileWriterController = new LogFileWriterController;
+AsyncFileWriter* LeafLogger::logFileWriterController = new AsyncFileWriter;
 
