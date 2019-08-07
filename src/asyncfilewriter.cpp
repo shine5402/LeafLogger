@@ -1,41 +1,58 @@
 #include "../include/asyncfilewriter.h"
 
+
 AsyncFileWriterWorker::AsyncFileWriterWorker(QObject *parent) : QObject(parent)
 {
 
 }
 
-void AsyncFileWriter::setFileDevice(QFile* file)
+QString AsyncFileWriterWorker::getFileName() const
 {
-    AsyncFileWriterWorker::file = file;
+    return file.fileName();
 }
 
-void AsyncFileWriter::setBuffer(QQueue<QString>* buffer, QMutex* bufferMutex)
-{
-    AsyncFileWriterWorker::buffer = buffer;
-    AsyncFileWriterWorker::bufferMutex = bufferMutex;
+AsyncFileWriter::AsyncFileWriter(QObject* parent) : QObject (parent) {
+    worker = new AsyncFileWriterWorker;
+    worker->moveToThread(&workerThread);
+    connect(this, &AsyncFileWriter::addToBuffer, worker, &AsyncFileWriterWorker::handleAddToBuffer);
+    connect(this, &AsyncFileWriter::setFileName, worker, &AsyncFileWriterWorker::handleSetFileName);
+    connect(worker, &AsyncFileWriterWorker::fileNotOpen, this, &AsyncFileWriter::fileNotOpen);
+    workerThread.start();
 }
+
+QString AsyncFileWriter::getFileName() const
+{
+    return worker->getFileName();
+}
+
 
 void AsyncFileWriterWorker::doWork()
 {
     QMutexLocker fileLocker(&fileMutex);
-    if (!file)
+    if (!file.isOpen()){
+        emit fileNotOpen();
         return;
-    QTextStream writer(file);
+    }
+    QTextStream writer(&file);
     writer.setCodec(QTextCodec::codecForName("Utf8"));
-    QMutexLocker bufferLocker(bufferMutex);
-    for (int i = 0;i < buffer->count();i++) {
-        writer << buffer->dequeue();
+    QMutexLocker bufferLocker(&bufferMutex);
+    for (int i = 0;i < buffer.count();i++) {
+        writer << buffer.dequeue();
     };
 }
 
-QFile* AsyncFileWriterWorker::file = nullptr;
-QMutex AsyncFileWriterWorker::fileMutex;
-QQueue<QString>* AsyncFileWriterWorker::buffer;
-QMutex* AsyncFileWriterWorker::bufferMutex;
-
-void AsyncFileWriter::handleFinished()
+void AsyncFileWriterWorker::handleAddToBuffer(const QString& string)
 {
+    QMutexLocker locker(&bufferMutex);
+    buffer.enqueue(string);
+    doWork();
+}
 
+void AsyncFileWriterWorker::handleSetFileName(const QString& fileName)
+{
+    if (file.isOpen())
+        file.close();
+    file.setFileName(fileName);
+    file.open(QIODevice::ReadWrite);
 }
 

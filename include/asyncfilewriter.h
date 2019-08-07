@@ -8,46 +8,48 @@
 #include <QMutex>
 #include <QThread>
 #include <QQueue>
-class AsyncFileWriter;
-class AsyncFileWriterWorker : public QObject
-{
-    friend AsyncFileWriter;
-    Q_OBJECT
-signals:
-    void finished();
-private slots:
-    void doWork();
-private:
-    explicit AsyncFileWriterWorker(QObject *parent = nullptr);
-    static QFile* file;
-    static QMutex fileMutex;
-    static QQueue<QString>* buffer;
-    static QMutex* bufferMutex;
+class AsyncFileWriterWorker;
 
-};
 class AsyncFileWriter : public QObject
 {
     Q_OBJECT
     QThread workerThread;
 
 public:
-    AsyncFileWriter(QObject* parent = nullptr) : QObject (parent) {
-        AsyncFileWriterWorker *worker = new AsyncFileWriterWorker;
-        worker->moveToThread(&workerThread);
-        connect(this, &AsyncFileWriter::bufferReady, worker, &AsyncFileWriterWorker::doWork);
-        connect(worker,&AsyncFileWriterWorker::finished,this,&AsyncFileWriter::handleFinished);
-        workerThread.start();
-    }
-    static void setBuffer(QQueue<QString>* buffer,QMutex* bufferMutex);
-    static void setFileDevice(QFile* file);
+    AsyncFileWriter(QObject* parent = nullptr);
+
     ~AsyncFileWriter() {
         workerThread.quit();
         workerThread.wait();
     }
+    QString getFileName() const;
 public slots:
-    void handleFinished();
 signals:
-    void bufferReady();
+    void addToBuffer(const QString& string);
+    void setFileName(const QString& fileName);//BUG:将FileName直接写入
+    void fileNotOpen();
+private:
+    AsyncFileWriterWorker *worker = nullptr;
 };
 
+class AsyncFileWriterWorker : public QObject
+{
+    friend AsyncFileWriter;
+    Q_OBJECT
+signals:
+    void finished();
+    void fileNotOpen();
+private slots:
+    void doWork();
+    void handleAddToBuffer(const QString& string);
+    void handleSetFileName(const QString& fileName);
+private:
+    explicit AsyncFileWriterWorker(QObject *parent = nullptr);
+    QFile file;//把所需基本设施迁移至Writer
+    QMutex fileMutex;
+    QQueue<QString> buffer;
+    QMutex bufferMutex;
+    QString getFileName() const;
+
+};
 #endif // LOGFILEWRITER_H

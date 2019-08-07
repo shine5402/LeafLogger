@@ -10,20 +10,13 @@ QString LeafLogger::getLogWithTime(const QString& log)
 void LeafLogger::commitLog(const QString& log)
 {
     printToConsole(log);
-    addToBuffer(log);
+    logFileWriter->addToBuffer(log);
 }
 
 int LeafLogger::printToConsole(const QString& log)
 {
     QMutexLocker locker(&consoleMutex);
     return std::fprintf(stderr,log.toUtf8().data());
-}
-
-void LeafLogger::addToBuffer(const QString& log)
-{
-    QMutexLocker locker(&logBufferMutex);
-    logBuffer.enqueue(log);
-    emit logFileWriterController->bufferReady();
 }
 
 void LeafLogger::LogMessagePrivate(const QString log)
@@ -44,16 +37,13 @@ void LeafLogger::LogMessage(QMetaObject *metaObject, const QString log)
     LogMessagePrivate(QString("[Log from %1] %2").arg(metaObject->className()).arg(log));
 }
 
-void LeafLogger::setFilePath(QString Path)
+void LeafLogger::setFileName(QString name)
 {
-    if (file.isOpen())
-        file.close();
-    file.setFileName(Path);
-    file.open(QIODevice::ReadWrite);
-    isFileSetPath = true;
+    logFileWriter->setFileName(name);
 }
 
-QString LeafLogger::setFilePathWithTime(const QString timeFormat)
+
+QString LeafLogger::setFileNameWithTime(const QString timeFormat)
 {
     QDateTime current_date_time =QDateTime::currentDateTime();
     QDir* dir = new QDir;
@@ -62,7 +52,7 @@ QString LeafLogger::setFilePathWithTime(const QString timeFormat)
     }
     delete dir;
     auto fileName=QString("./log/log%1.txt").arg(current_date_time.toString(timeFormat));
-    setFilePath(fileName);
+    setFileName(fileName);
     return fileName;
 }
 void LeafLogger::LogSysInfo()
@@ -79,7 +69,7 @@ void LeafLogger::LogSysInfo()
 
 void LeafLogger::LogInit()
 {
-    setFilePathWithTime();
+    setFileNameWithTime();
     LogSysInfo();
     qInstallMessageHandler(messageHandler);
 }
@@ -109,17 +99,15 @@ void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& mes
 
 QString LeafLogger::getFileName()
 {
-    return file.fileName();
+    return logFileWriter->getFileName();
 }
 
 LeafLogger::Garbo::Garbo()
 {
-    AsyncFileWriter::setFileDevice(&LeafLogger::file);
-    AsyncFileWriter::setBuffer(&logBuffer,&logBufferMutex);
 }
 
 LeafLogger::Garbo::~Garbo(){
-    logFileWriterController->deleteLater();
+    logFileWriter->deleteLater();
 }
 
 LeafLogger &LeafLogger::operator<<(const QString log)
@@ -130,11 +118,7 @@ LeafLogger &LeafLogger::operator<<(const QString log)
 
 
 //Initialize the global variables
-QFile LeafLogger::file;
-bool LeafLogger::isFileSetPath = false;
 QMutex LeafLogger::consoleMutex;
 LeafLogger::Garbo LeafLogger::garbo;
-QQueue<QString> LeafLogger::logBuffer{};
-QMutex LeafLogger::logBufferMutex;
-AsyncFileWriter* LeafLogger::logFileWriterController = new AsyncFileWriter;
+AsyncFileWriter* LeafLogger::logFileWriter = new AsyncFileWriter;
 

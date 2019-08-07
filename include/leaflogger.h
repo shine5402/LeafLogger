@@ -25,8 +25,8 @@ class LEAFLOGGERSHARED_EXPORT LeafLogger
 public:
     static void LogMessage(const QString log);
     static void LogMessage(QMetaObject* metaObject,const QString log);
-    static void setFilePath(QString Path);
-    static QString setFilePathWithTime(const QString timeFormat = "yyyyMMddhhmmsszzz");
+    static void setFileName(QString name);
+    static QString setFileNameWithTime(const QString timeFormat = "yyyyMMddhhmmsszzz");
     LeafLogger& operator<<(const QString log);
     static void LogSysInfo();
     static void LogInit();
@@ -34,17 +34,12 @@ public:
     static QString getFileName();
 
 private:
-    static QFile file;
-    static bool isFileSetPath;
     static QMutex consoleMutex;
     static void LogMessagePrivate(const QString log);
     static QString getLogWithTime(const QString& log);
     static void commitLog(const QString& log);
     static int printToConsole(const QString& log);
-    static QQueue<QString> logBuffer;
-    static QMutex logBufferMutex;
-    static void addToBuffer(const QString& log);
-    static AsyncFileWriter* logFileWriterController;
+    static AsyncFileWriter* logFileWriter;
     class Garbo{
     public:
         Garbo();
