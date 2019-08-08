@@ -10,6 +10,7 @@ QString LeafLogger::getLogWithTime(const QString& log)
 void LeafLogger::commitLog(const QString& log)
 {
     printToConsole(log);
+    checkLogFileWriter();
     emit logFileWriter->addToBuffer(log);
 }
 
@@ -17,6 +18,12 @@ int LeafLogger::printToConsole(const QString& log)
 {
     QMutexLocker locker(&consoleMutex);
     return std::fprintf(stderr,log.toUtf8().data());
+}
+
+void LeafLogger::checkLogFileWriter()
+{
+    if (!logFileWriter)
+        logFileWriter = new AsyncFileWriter;
 }
 
 void LeafLogger::LogMessagePrivate(const QString log)
@@ -39,6 +46,7 @@ void LeafLogger::LogMessage(QMetaObject *metaObject, const QString log)
 
 void LeafLogger::setFileName(QString name)
 {
+    checkLogFileWriter();
     logFileWriter->setFileName(name);
 }
 
@@ -99,7 +107,11 @@ void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& mes
 
 QString LeafLogger::getFileName()
 {
+    if (logFileWriter)
     return logFileWriter->fileName();
+    else {
+        return QString();
+    }
 }
 
 LeafLogger::Garbo::Garbo()
@@ -107,6 +119,7 @@ LeafLogger::Garbo::Garbo()
 }
 
 LeafLogger::Garbo::~Garbo(){
+    if (logFileWriter)
     logFileWriter->deleteLater();
 }
 
@@ -120,5 +133,5 @@ LeafLogger &LeafLogger::operator<<(const QString log)
 //Initialize the global variables
 QMutex LeafLogger::consoleMutex;
 LeafLogger::Garbo LeafLogger::garbo;
-AsyncFileWriter* LeafLogger::logFileWriter = new AsyncFileWriter;
+AsyncFileWriter* LeafLogger::logFileWriter = nullptr;
 

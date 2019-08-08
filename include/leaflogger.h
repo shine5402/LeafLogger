@@ -40,6 +40,7 @@ private:
     static void commitLog(const QString& log);
     static int printToConsole(const QString& log);
     static AsyncFileWriter* logFileWriter;
+    static void checkLogFileWriter();
     class Garbo{
     public:
         Garbo();
