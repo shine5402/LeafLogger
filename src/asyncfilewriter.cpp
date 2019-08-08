@@ -3,7 +3,7 @@
 
 AsyncFileWriterWorker::AsyncFileWriterWorker(QFile* fileDevice, QMutex* fileMutex, QQueue<QString>* buffer, QMutex* bufferMutex, QObject *parent) : QObject(parent),file(fileDevice),fileMutex(fileMutex),buffer(buffer),bufferMutex(bufferMutex)
 {
-    startTimer(50);
+
 }
 
 
@@ -34,11 +34,6 @@ void AsyncFileWriter::addToBuffer(const QString& string)
     buffer.enqueue(string);
     locker.unlock();
     emit bufferReady();
-}
-
-void AsyncFileWriterWorker::timerEvent(QTimerEvent*)
-{
-    doWork();
 }
 
 void AsyncFileWriterWorker::doWork()

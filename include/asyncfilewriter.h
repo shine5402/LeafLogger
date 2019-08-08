@@ -48,8 +48,6 @@ class AsyncFileWriterWorker : public QObject
 signals:
     void finished();
     void fileNotOpen();
-protected:
-    void timerEvent(QTimerEvent*) override;
 private slots:
     void doWork();
 private:
