@@ -101,8 +101,12 @@ void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& mes
     case QtFatalMsg :
         msgTypeString = "[Fatal] ";
     }
+#ifdef QT_MESSAGELOGCONTEXT
     QString logContextString = QString("\n========================= category: %1 | file: %2 line: %3\n========================= function : %4 | version : %5").arg(messageLogContext.category).arg(messageLogContext.file).arg(messageLogContext.line).arg(messageLogContext.function).arg(messageLogContext.version);
     LogMessagePrivate(msgTypeString + message + logContextString);
+#else
+    LogMessagePrivate(msgTypeString + message);
+#endif
 }
 
 QString LeafLogger::getFileName()
