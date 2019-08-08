@@ -22,6 +22,7 @@ QString AsyncFileWriter::fileName() const
 
 void AsyncFileWriter::setFileName(const QString& fileName, QIODevice::OpenMode openMode)
 {
+    QMutexLocker locker(&fileMutex);
     if (file.isOpen())
         file.close();
     file.setFileName(fileName);
