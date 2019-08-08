@@ -47,9 +47,8 @@ void AsyncFileWriterWorker::doWork()
     QMutexLocker bufferLocker(bufferMutex);
     if (buffer->empty())
         return;
-    QTextStream writer;
+    QTextStream writer(file);
     writer.setCodec(QTextCodec::codecForName("Utf8"));
-    writer.setDevice(file);
     for (int i = 0;i < buffer->count();i++) {
         writer << buffer->dequeue();
     };
