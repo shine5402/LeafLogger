@@ -10,7 +10,7 @@ QString LeafLogger::getLogWithTime(const QString& log)
 void LeafLogger::commitLog(const QString& log)
 {
     printToConsole(log);
-    logFileWriter->addToBuffer(log);
+    emit logFileWriter->addToBuffer(log);
 }
 
 int LeafLogger::printToConsole(const QString& log)
@@ -99,7 +99,7 @@ void LeafLogger::messageHandler(QtMsgType msgType, const QMessageLogContext& mes
 
 QString LeafLogger::getFileName()
 {
-    return logFileWriter->getFileName();
+    return logFileWriter->fileName();
 }
 
 LeafLogger::Garbo::Garbo()

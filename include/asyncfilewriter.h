@@ -8,6 +8,9 @@
 #include <QMutex>
 #include <QThread>
 #include <QQueue>
+#include <QDebug>
+#include <QTimer>
+
 class AsyncFileWriterWorker;
 
 class AsyncFileWriter : public QObject
@@ -22,14 +25,20 @@ public:
         workerThread.quit();
         workerThread.wait();
     }
-    QString getFileName() const;
+
 public slots:
-signals:
+    QString fileName() const;
+    void setFileName(const QString& fileName, QIODevice::OpenMode openMode = QIODevice::ReadWrite);
     void addToBuffer(const QString& string);
-    void setFileName(const QString& fileName);//BUG:将FileName直接写入
+signals:
     void fileNotOpen();
+    void bufferReady();
 private:
     AsyncFileWriterWorker *worker = nullptr;
+    QFile file;
+    QMutex fileMutex;
+    QQueue<QString> buffer;
+    QMutex bufferMutex;
 };
 
 class AsyncFileWriterWorker : public QObject
@@ -39,17 +48,16 @@ class AsyncFileWriterWorker : public QObject
 signals:
     void finished();
     void fileNotOpen();
+protected:
+    void timerEvent(QTimerEvent*) override;
 private slots:
     void doWork();
-    void handleAddToBuffer(const QString& string);
-    void handleSetFileName(const QString& fileName);
 private:
-    explicit AsyncFileWriterWorker(QObject *parent = nullptr);
-    QFile file;//把所需基本设施迁移至Writer
-    QMutex fileMutex;
-    QQueue<QString> buffer;
-    QMutex bufferMutex;
-    QString getFileName() const;
+    explicit AsyncFileWriterWorker(QFile* fileDevice, QMutex* fileMutex, QQueue<QString>* buffer,QMutex* bufferMutex,QObject *parent = nullptr);
+    QFile* file = nullptr;
+    QMutex* fileMutex = nullptr;
+    QQueue<QString>* buffer = nullptr;
+    QMutex* bufferMutex = nullptr;
 
 };
 #endif // LOGFILEWRITER_H
