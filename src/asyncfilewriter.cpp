@@ -10,7 +10,7 @@ AsyncFileWriterWorker::AsyncFileWriterWorker(QFile* fileDevice, QMutex* fileMute
 AsyncFileWriter::AsyncFileWriter(QObject* parent) : QObject (parent) {
     worker = new AsyncFileWriterWorker(&file,&fileMutex,&buffer,&bufferMutex);
     worker->moveToThread(&workerThread);
-    connect(this,SIGNAL(bufferReady()),worker,SLOT(doWork()));
+    connect(this,SIGNAL(bufferReady()),worker,SLOT(doWork()),Qt::ConnectionType::QueuedConnection);
     connect(worker, &AsyncFileWriterWorker::fileNotOpen, this, &AsyncFileWriter::fileNotOpen);
     workerThread.start();
 }
