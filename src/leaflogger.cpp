@@ -9,14 +9,15 @@ QString LeafLogger::getLogWithTime(const QString& log)
 
 void LeafLogger::commitLog(const QString& log)
 {
-    printToConsole(log);
+    auto consolePrintThread = QThread::create(&printToConsole,&consoleMutex,log);
+    consolePrintThread->start();
     checkLogFileWriter();
     emit logFileWriter->addToBuffer(log);
 }
 
-int LeafLogger::printToConsole(const QString& log)
+int LeafLogger::printToConsole(QMutex* consoleMutex,const QString& log)
 {
-    QMutexLocker locker(&consoleMutex);
+    QMutexLocker locker(consoleMutex);
     return std::fprintf(stderr,log.toUtf8().data());
 }
 

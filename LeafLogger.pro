@@ -11,6 +11,7 @@ TEMPLATE = lib
 
 DEFINES += LEAFLOGGER_LIBRARY
 
+CONFIG += c++17
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -37,4 +38,11 @@ CONFIG(debug, debug|release) {
 unix {
     target.path = /usr/lib
     INSTALLS += target
+}
+win32-msvc{
+QMAKE_CXXFLAGS += /std:c++17
+}
+win32-g++{
+QMAKE_CXXFLAGS += -std=c++1z
+QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
 }

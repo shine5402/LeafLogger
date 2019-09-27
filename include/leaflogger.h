@@ -38,7 +38,7 @@ private:
     static void LogMessagePrivate(const QString log);
     static QString getLogWithTime(const QString& log);
     static void commitLog(const QString& log);
-    static int printToConsole(const QString& log);
+    static int printToConsole(QMutex* consoleMutex, const QString& log);
     static AsyncFileWriter* logFileWriter;
     static void checkLogFileWriter();
     class Garbo{
